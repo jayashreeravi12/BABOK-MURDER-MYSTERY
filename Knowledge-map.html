@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BABOK Interactive Learning Map</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .map-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .progress-overview {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .progress-stat {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .progress-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .progress-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .knowledge-map {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+            min-height: 600px;
+        }
+
+        @media (max-width: 1024px) {
+            .knowledge-map {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .knowledge-map {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(6, 1fr);
+            }
+        }
+
+        .knowledge-area {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .knowledge-area:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .knowledge-area.explored {
+            background: linear-gradient(135deg, #6bcf7f, #4d96ff);
+            color: white;
+        }
+
+        .knowledge-area.exploring {
+            background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .area-header {
+            margin-bottom: 15px;
+        }
+
+        .area-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .area-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .area-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .area-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .tools-count {
+            font-size: 0.9rem;
+            background: rgba(0,0,0,0.1);
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+
+        .progress-badge {
+            font-size: 1.2rem;
+        }
+
+        .area-progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6bcf7f, #4d96ff);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-subtitle {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .tool-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tool-card:hover {
+            background: #e3f2fd;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .tool-card.completed {
+            border-left-color: #6bcf7f;
+            background: linear-gradient(135deg, #e8f5e8, #f0f8ff);
+        }
+
+        .tool-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .tool-description {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .tool-use-case {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.9rem;
+            color: #555;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .use-case-label {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 5px;
+        }
+
+        .badge-showcase {
+            background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .earned-badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .badge {
+            background: white;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .floating-icon {
+            position: fixed;
+            font-size: 2rem;
+            color: rgba(255,255,255,0.3);
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+
+        .exploration-tip {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .learning-path {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .path-step {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .path-step.completed {
+            background: #e8f5e8;
+        }
+
+        .path-step.current {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .step-number.completed {
+            background: #6bcf7f;
+        }
+
+        .achievement-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            z-index: 2000;
+            animation: achievementBounce 0.6s ease;
+        }
+
+        @keyframes achievementBounce {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+        <div class="header">
+            <h1>🗺️ BABOK Knowledge Map</h1>
+            <p class="subtitle">Explore the 6 Knowledge Areas • Discover 50+ Tools • Track Your Progress</p>
+        </div>
+
+        <div class="progress-overview">
+            <div class="progress-stat">
+                <div class="progress-number" id="areasExplored">0</div>
+                <div class="progress-label">Areas Explored</div>
+            </div>
+            <div class="progress-stat">
+                <div class="progress-number" id="toolsLearned">0</div>
+                <div class="progress-label">Tools Learned</div>
+            </div>
+            <div class="progress-stat">
+                <div class="progress-number" id="badgesEarned">0</div>
+                <div class="progress-label">Badges Earned</div>
+            </div>
+            <div class="progress-stat">
+                <div class="progress-number" id="completionRate">0%</div>
+                <div class="progress-label">Completion</div>
+            </div>
+        </div>
+
+        <div class="exploration-tip">
+            <strong>💡 How to Use:</strong> Click on any knowledge area below to explore its tools and techniques. Complete learning objectives to earn badges and track your BABOK mastery!
+        </div>
+
+        <div class="knowledge-map">
+            <div class="knowledge-area" data-area="strategy" onclick="openArea('strategy')">
+                <div class="area-header">
+                    <div class="area-icon">🎯</div>
+                    <div class="area-title">Strategy Analysis</div>
+                    <div class="area-subtitle">Define business direction & value</div>
+                </div>
+                <div class="area-stats">
+                    <div class="tools-count">8 Tools</div>
+                    <div class="progress-badge">🔒</div>
+                </div>
+                <div class="area-progress">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="knowledge-area" data-area="elicitation" onclick="openArea('elicitation')">
+                <div class="area-header">
+                    <div class="area-icon">🗣️</div>
+                    <div class="area-title">Requirements Elicitation</div>
+                    <div class="area-subtitle">Gather stakeholder needs</div>
+                </div>
+                <div class="area-stats">
+                    <div class="tools-count">9 Tools</div>
+                    <div class="progress-badge">🔒</div>
+                </div>
+                <div class="area-progress">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="knowledge-area" data-area="analysis" onclick="openArea('analysis')">
+                <div class="area-header">
+                    <div class="area-icon">🔍</div>
+                    <div class="area-title">Requirements Analysis</div>
+                    <div class="area-subtitle">Structure & define solutions</div>
+                </div>
+                <div class="area-stats">
+                    <div class="tools-count">12 Tools</div>
+                    <div class="progress-badge">🔒</div>
+                </div>
+                <div class="area-progress">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="knowledge-area" data-area="evaluation" onclick="openArea('evaluation')">
+                <div class="area-header">
+                    <div class="area-icon">⚖️</div>
+                    <div class="area-title">Solution Evaluation</div>
+                    <div class="area-subtitle">Assess solution performance</div>
+                </div>
+                <div class="area-stats">
+                    <div class="tools-count">7 Tools</div>
+                    <div class="progress-badge">🔒</div>
+                </div>
+                <div class="area-progress">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="knowledge-area" data-area="management" onclick="openArea('management')">
+                <div class="area-header">
+                    <div class="area-icon">📋</div>
+                    <div class="area-title">Requirements Management</div>
+                    <div class="area-subtitle">Maintain & trace requirements</div>
+                </div>
+                <div class="area-stats">
+                    <div class="tools-count">6 Tools</div>
+                    <div class="progress-badge">🔒</div>
+                </div>
+                <div class="area-progress">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="knowledge-area" data-area="planning" onclick="openArea('planning')">
+                <div class="area-header">
+                    <div class="area-icon">📈</div>
+                    <div class="area-title">BA Planning & Monitoring</div>
+                    <div class="area-subtitle">Plan & govern BA activities</div>
+                </div>
+                <div class="area-stats">
+                    <div class="tools-count">8 Tools</div>
+                    <div class="progress-badge">🔒</div>
+                </div>
+                <div class="area-progress">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-path">
+            <h3 style="margin-bottom: 20px; color: #2c3e50;">🛤️ Recommended Learning Path</h3>
+            <div class="path-step current">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>Start with Strategy Analysis</strong><br>
+                    <small>Understand business context and objectives</small>
+                </div>
+            </div>
+            <div class="path-step">
+                <div class="step-number">2</div>
+                <div>
+                    <strong>Move to Requirements Elicitation</strong><br>
+                    <small>Learn to gather stakeholder needs effectively</small>
+                </div>
+            </div>
+            <div class="path-step">
+                <div class="step-number">3</div>
+                <div>
+                    <strong>Master Requirements Analysis</strong><br>
+                    <small>Structure and define solution requirements</small>
+                </div>
+            </div>
+            <div class="path-step">
+                <div class="step-number">4</div>
+                <div>
+                    <strong>Explore Planning & Monitoring</strong><br>
+                    <small>Plan BA activities and govern processes</small>
+                </div>
+            </div>
+            <div class="path-step">
+                <div class="step-number">5</div>
+                <div>
+                    <strong>Learn Requirements Management</strong><br>
+                    <small>Maintain and trace requirements lifecycle</small>
+                </div>
+            </div>
+            <div class="path-step">
+                <div class="step-number">6</div>
+                <div>
+                    <strong>Complete with Solution Evaluation</strong><br>
+                    <small>Assess and optimize solution performance</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Knowledge Area Details -->
+    <div id="areaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+                <h2 class="modal-title" id="modalTitle">Knowledge Area</h2>
+                <p class="modal-subtitle" id="modalSubtitle">Explore tools and techniques</p>
+            </div>
+            <div class="modal-body">
+                <div class="quick-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="modalToolCount">0</div>
+                        <div class="stat-label">Total Tools</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="modalLearnedCount">0</div>
+                        <div class="stat-label">Learned</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="modalProgressPercent">0%</div>
+                        <div class="stat-label">Progress</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="modalDifficulty">⭐⭐⭐</div>
+                        <div class="stat-label">Difficulty</div>
+                    </div>
+                </div>
+
+                <div id="badgeShowcase" class="badge-showcase" style="display: none;">
+                    <h4 style="color: white; margin-bottom: 10px;">🏆 Area Badges</h4>
+                    <div class="earned-badges" id="areaBadges"></div>
+                </div>
+
+                <div class="tools-grid" id="toolsGrid">
+                    <!-- Tools will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating decorative elements -->
+    <div class="floating-icon" style="top: 10%; left: 5%; animation-delay: 0s;">🎯</div>
+    <div class="floating-icon" style="top: 20%; right: 8%; animation-delay: 2s;">🗣️</div>
+    <div class="floating-icon" style="bottom: 25%; left: 10%; animation-delay: 4s;">🔍</div>
+    <div class="floating-icon" style="bottom: 15%; right: 5%; animation-delay: 1s;">⚖️</div>
+
+    <script>
+        // Knowledge Areas Database
+        const knowledgeAreas = {
+            strategy: {
+                title: "Strategy Analysis",
+                subtitle: "Define business direction and identify value opportunities",
+                icon: "🎯",
+                difficulty: "⭐⭐⭐⭐",
+                description: "Understand the business environment and define strategic direction",
+                tools: [
+                    {
+                        name: "Business Cases",
+                        description: "Justify investment in proposed solutions with cost-benefit analysis",
+                        useCase: "When executives need ROI justification for a $2M CRM system implementation"
+                    },
+                    {
+                        name: "Balanced Scorecard",
+                        description: "Measure organizational performance across multiple perspectives",
+                        useCase: "Creating comprehensive performance dashboards for executive reporting"
+                    },
+                    {
+                        name: "Benchmarking",
+                        description: "Compare performance against industry standards or competitors",
+                        useCase: "Analyzing customer service response times vs. industry leaders"
+                    },
+                    {
+                        name: "Business Model Canvas",
+                        description: "Visualize and design business models and value propositions",
+                        useCase: "Startup mapping out revenue streams and customer segments"
+                    },
+                    {
+                        name: "Business Capability Analysis",
+                        description: "Assess organizational abilities to achieve strategic objectives",
+                        useCase: "Digital transformation readiness assessment for legacy systems"
+                    },
+                    {
+                        name: "Root Cause Analysis",
+                        description: "Identify underlying causes of problems or opportunities",
+                        useCase: "Investigating why customer satisfaction scores dropped 20% last quarter"
+                    },
+                    {
+                        name: "SWOT Analysis",
+                        description: "Analyze strengths, weaknesses, opportunities, and threats",
+                        useCase: "Market entry strategy for expanding into Asian markets"
+                    },
+                    {
+                        name: "Value Stream Mapping",
+                        description: "Visualize flow of materials and information in value creation",
+                        useCase: "Optimizing manufacturing processes to reduce waste and delays"
+                    }
+                ]
+            },
+            elicitation: {
+                title: "Requirements Elicitation & Collaboration",
+                subtitle: "Gather stakeholder needs and facilitate collaboration",
+                icon: "🗣️",
+                difficulty: "⭐⭐⭐",
+                description: "Extract requirements from stakeholders using various techniques",
+                tools: [
+                    {
+                        name: "Brainstorming",
+                        description: "Generate creative ideas and solutions collaboratively",
+                        useCase: "Innovation session for new mobile app features with cross-functional team"
+                    },
+                    {
+                        name: "Interviews",
+                        description: "One-on-one conversations to gather detailed requirements",
+                        useCase: "Understanding daily challenges of customer service representatives"
+                    },
+                    {
+                        name: "Workshops",
+                        description: "Facilitated group sessions for collaborative requirements gathering",
+                        useCase: "Aligning 5 departments on shared data standards for integration project"
+                    },
+                    {
+                        name: "Surveys",
+                        description: "Collect quantitative and qualitative data from large groups",
+                        useCase: "Gathering feedback from 500+ employees about current IT tools satisfaction"
+                    },
+                    {
+                        name: "Focus Groups",
+                        description: "Structured discussions with representative user groups",
+                        useCase: "Testing new product concepts with target customer segments"
+                    },
+                    {
+                        name: "Observation",
+                        description: "Watch users perform tasks in their natural environment",
+                        useCase: "Studying warehouse operations to identify process improvement opportunities"
+                    },
+                    {
+                        name: "Document Analysis",
+                        description: "Review existing documentation to understand current state",
+                        useCase: "Analyzing current policies before designing new compliance system"
+                    },
+                    {
+                        name: "Interface Analysis",
+                        description: "Examine how systems, processes, or organizations interact",
+                        useCase: "Mapping data flows between CRM and ERP systems for integration"
+                    },
+                    {
+                        name: "Collaborative Games",
+                        description: "Use structured games to engage stakeholders and gather insights",
+                        useCase: "Priority poker session to rank feature importance with product team"
+                    }
+                ]
+            },
+            analysis: {
+                title: "Requirements Analysis & Design Definition",
+                subtitle: "Structure and define solution requirements",
+                icon: "🔍",
+                difficulty: "⭐⭐⭐⭐⭐",
+                description: "Analyze, structure, and specify requirements for solution design",
+                tools: [
+                    {
+                        name: "Acceptance Criteria",
+                        description: "Define conditions that solutions must meet to be accepted",
+                        useCase: "Specifying testable criteria for user authentication functionality"
+                    },
+                    {
+                        name: "Backlog Management",
+                        description: "Prioritize and manage requirements in iterative development",
+                        useCase: "Sprint planning with product backlog prioritization for agile team"
+                    },
+                    {
+                        name: "Business Rules Analysis",
+                        description: "Identify and document business policies and constraints",
+                        useCase: "Defining loan approval rules for automated banking system"
+                    },
+                    {
+                        name: "Data Modeling",
+                        description: "Structure and organize data requirements and relationships",
+                        useCase: "Designing customer database schema for new CRM implementation"
+                    },
+                    {
+                        name: "Process Modeling",
+                        description: "Document current and future state business processes",
+                        useCase: "Mapping invoice approval workflow to identify bottlenecks"
+                    },
+                    {
+                        name: "Prototyping",
+                        description: "Create preliminary versions to validate requirements",
+                        useCase: "Building clickable mockups for new dashboard interface"
+                    },
+                    {
+                        name: "Scenarios and Use Cases",
+                        description: "Describe how users interact with systems to achieve goals",
+                        useCase: "Documenting online shopping cart functionality from user perspective"
+                    },
+                    {
+                        name: "State Modeling",
+                        description: "Model how entities change state over time",
+                        useCase: "Tracking order status transitions from placement to delivery"
+                    },
+                    {
+                        name: "User Stories",
+                        description: "Capture requirements from end-user perspective",
+                        useCase: "Writing user stories for mobile banking app features"
+                    },
+                    {
+                        name: "Wireframes",
+                        description: "Create low-fidelity visual representations of interfaces",
+                        useCase: "Sketching website layout before detailed design phase"
+                    },
+                    {
+                        name: "Glossary",
+                        description: "Define terms and concepts for consistent understanding",
+                        useCase: "Creating shared vocabulary for complex financial trading system"
+                    },
+                    {
+                        name: "Gap Analysis",
+                        description: "Compare current state with desired future state",
+                        useCase: "Identifying missing capabilities for digital transformation initiative"
+                    }
+                ]
+            },
+            evaluation: {
+                title: "Solution Evaluation",
+                subtitle: "Assess solution performance and value",
+                icon: "⚖️",
+                difficulty: "⭐⭐⭐⭐",
+                description: "Evaluate how well solutions meet business needs and objectives",
+                tools: [
+                    {
+                        name: "Testing",
+                        description: "Verify that solutions meet specified requirements and quality standards",
+                        useCase: "User acceptance testing for new payroll system before go-live"
+                    },
+                    {
+                        name: "Reviews",
+                        description: "Systematic examination of work products for quality and completeness",
+                        useCase: "Requirements review session with stakeholders before development starts"
+                    },
+                    {
+                        name: "Walkthroughs",
+                        description: "Step-by-step examination of processes or solutions with stakeholders",
+                        useCase: "Walking through new employee onboarding process with HR team"
+                    },
+                    {
+                        name: "Metrics and KPIs",
+                        description: "Measure solution performance against defined success criteria",
+                        useCase: "Tracking customer satisfaction scores after CRM implementation"
+                    },
+                    {
+                        name: "Solution Validation",
+                        description: "Confirm that solutions solve the right problem effectively",
+                        useCase: "Validating chatbot reduces support ticket volume by target amount"
+                    },
+                    {
+                        name: "Variance Analysis",
+                        description: "Compare actual performance with planned or expected results",
+                        useCase: "Analyzing why project delivered 3 months late and over budget"
+                    },
+                    {
+                        name: "Item Tracking",
+                        description: "Monitor status and changes of solution components over time",
+                        useCase: "Tracking feature development progress in agile project dashboard"
+                    }
+                ]
+            },
+            management: {
+                title: "Requirements Management & Communication",
+                subtitle: "Maintain and trace requirements throughout lifecycle",
+                icon: "📋",
+                difficulty: "⭐⭐⭐",
+                description: "Manage requirements from inception through implementation and beyond",
+                tools: [
+                    {
+                        name: "Traceability",
+                        description: "Track relationships between requirements and other work products",
+                        useCase: "Linking business requirements to test cases for compliance audit"
+                    },
+                    {
+                        name: "Change Control",
+                        description: "Manage and control changes to requirements throughout project",
+                        useCase: "Evaluating impact of new regulatory requirement on existing system"
+                    },
+                    {
+                        name: "Version Control",
+                        description: "Track different versions of requirements and related artifacts",
+                        useCase: "Managing requirements document versions across multiple releases"
+                    },
+                    {
+                        name: "Requirements Attributes",
+                        description: "Define characteristics that provide additional information about requirements",
+                        useCase: "Tagging requirements with priority, source, and complexity ratings"
+                    },
+                    {
+                        name: "Communication Plan",
+                        description: "Define how, when, and to whom information will be communicated",
+                        useCase: "Weekly status updates to steering committee with key metrics"
+                    },
+                    {
+                        name: "Requirements Repository",
+                        description: "Centralized storage and organization of all requirements artifacts",
+                        useCase: "SharePoint site with searchable requirements database for large program"
+                    }
+                ]
+            },
+            planning: {
+                title: "Business Analysis Planning & Monitoring",
+                subtitle: "Plan and govern business analysis activities",
+                icon: "📈",
+                difficulty: "⭐⭐⭐⭐",
+                description: "Plan, manage, and monitor business analysis work and stakeholder engagement",
+                tools: [
+                    {
+                        name: "Stakeholder Analysis",
+                        description: "Identify, analyze, and plan engagement with project stakeholders",
+                        useCase: "Mapping influence and interest of 15 stakeholder groups for ERP project"
+                    },
+                    {
+                        name: "RACI Matrix",
+                        description: "Define roles and responsibilities for project activities and decisions",
+                        useCase: "Clarifying who is responsible for approving requirements changes"
+                    },
+                    {
+                        name: "Work Breakdown Structure",
+                        description: "Decompose BA work into manageable components and deliverables",
+                        useCase: "Breaking down requirements analysis phase into specific tasks and timeframes"
+                    },
+                    {
+                        name: "Estimation",
+                        description: "Predict effort, time, and resources needed for BA activities",
+                        useCase: "Estimating time needed for stakeholder interviews across 8 departments"
+                    },
+                    {
+                        name: "Risk Analysis",
+                        description: "Identify, assess, and plan responses to BA-related risks",
+                        useCase: "Risk register tracking stakeholder availability issues during peak season"
+                    },
+                    {
+                        name: "Planning Poker",
+                        description: "Collaborative estimation technique using cards or digital tools",
+                        useCase: "Agile team estimating story points for user stories in sprint planning"
+                    },
+                    {
+                        name: "Lessons Learned",
+                        description: "Capture insights and knowledge from BA activities for future improvement",
+                        useCase: "Post-project review documenting what worked well in requirements gathering"
+                    },
+                    {
+                        name: "Governance",
+                        description: "Establish decision-making processes and authority structures",
+                        useCase: "Setting up requirements approval workflow with steering committee oversight"
+                    }
+                ]
+            }
+        };
+
+        // Game state
+        let userProgress = {
+            areasExplored: new Set(),
+            toolsLearned: new Set(),
+            badges: new Set(),
+            currentArea: null
+        };
+
+        // Badge definitions
+        const badges = {
+            first_explorer: { name: "🎯 First Explorer", description: "Opened your first knowledge area" },
+            tool_collector: { name: "🔧 Tool Collector", description: "Learned 5 different tools" },
+            area_specialist: { name: "⭐ Area Specialist", description: "Completed an entire knowledge area" },
+            strategy_master: { name: "🎯 Strategy Master", description: "Mastered Strategy Analysis" },
+            elicitation_expert: { name: "🗣️ Elicitation Expert", description: "Mastered Requirements Elicitation" },
+            analysis_guru: { name: "🔍 Analysis Guru", description: "Mastered Requirements Analysis" },
+            evaluation_pro: { name: "⚖️ Evaluation Pro", description: "Mastered Solution Evaluation" },
+            management_ace: { name: "📋 Management Ace", description: "Mastered Requirements Management" },
+            planning_wizard: { name: "📈 Planning Wizard", description: "Mastered BA Planning & Monitoring" },
+            babok_master: { name: "👑 BABOK Master", description: "Completed all 6 knowledge areas" },
+            speed_learner: { name: "⚡ Speed Learner", description: "Learned 10 tools in one session" },
+            completionist: { name: "💎 Completionist", description: "Learned all 50 BABOK tools" }
+        };
+
+        // Initialize the application
+        function initializeApp() {
+            updateProgressStats();
+            loadUserProgress();
+            
+            // Add some welcome guidance
+            setTimeout(() => {
+                if (userProgress.areasExplored.size === 0) {
+                    showWelcomeMessage();
+                }
+            }, 1000);
+        }
+
+        // Show welcome message for new users
+        function showWelcomeMessage() {
+            const popup = document.createElement('div');
+            popup.className = 'achievement-popup';
+            popup.innerHTML = `
+                <div style="font-size: 2rem; margin-bottom: 15px;">🎉</div>
+                <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Welcome to BABOK Map!</div>
+                <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 15px;">Click on any knowledge area to start exploring tools and earning badges!</div>
+                <div style="font-size: 0.8rem; opacity: 0.8;">💡 Tip: Start with Strategy Analysis for the best learning path</div>
+            `;
+            
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 4000);
+        }
+
+        // Open knowledge area modal
+        function openArea(areaKey) {
+            const area = knowledgeAreas[areaKey];
+            userProgress.currentArea = areaKey;
+            
+            // Mark area as explored
+            if (!userProgress.areasExplored.has(areaKey)) {
+                userProgress.areasExplored.add(areaKey);
+                checkBadgeEarned('first_explorer');
+                updateAreaVisuals(areaKey);
+            }
+            
+            // Update modal content
+            document.getElementById('modalTitle').textContent = area.title;
+            document.getElementById('modalSubtitle').textContent = area.subtitle;
+            document.getElementById('modalToolCount').textContent = area.tools.length;
+            document.getElementById('modalDifficulty').textContent = area.difficulty;
+            
+            // Calculate progress for this area
+            const learnedTools = area.tools.filter(tool => 
+                userProgress.toolsLearned.has(`${areaKey}_${tool.name}`)
+            ).length;
+            const progressPercent = Math.round((learnedTools / area.tools.length) * 100);
+            
+            document.getElementById('modalLearnedCount').textContent = learnedTools;
+            document.getElementById('modalProgressPercent').textContent = progressPercent + '%';
+            
+            // Generate tools grid
+            generateToolsGrid(area.tools, areaKey);
+            
+            // Show area-specific badges
+            showAreaBadges(areaKey, progressPercent);
+            
+            // Show modal
+            document.getElementById('areaModal').classList.add('show');
+            
+            // Update overall progress
+            updateProgressStats();
+        }
+
+        // Generate tools grid for modal
+        function generateToolsGrid(tools, areaKey) {
+            const grid = document.getElementById('toolsGrid');
+            grid.innerHTML = '';
+            
+            tools.forEach(tool => {
+                const toolId = `${areaKey}_${tool.name}`;
+                const isLearned = userProgress.toolsLearned.has(toolId);
+                
+                const toolCard = document.createElement('div');
+                toolCard.className = `tool-card ${isLearned ? 'completed' : ''}`;
+                toolCard.onclick = () => learnTool(toolId, tool.name);
+                
+                toolCard.innerHTML = `
+                    <div class="tool-name">${tool.name} ${isLearned ? '✅' : ''}</div>
+                    <div class="tool-description">${tool.description}</div>
+                    <div class="tool-use-case">
+                        <div class="use-case-label">💼 Use Case:</div>
+                        ${tool.useCase}
+                    </div>
+                `;
+                
+                grid.appendChild(toolCard);
+            });
+        }
+
+        // Learn a specific tool
+        function learnTool(toolId, toolName) {
+            if (!userProgress.toolsLearned.has(toolId)) {
+                userProgress.toolsLearned.add(toolId);
+                
+                // Show learning celebration
+                showLearningCelebration(toolName);
+                
+                // Check for badges
+                checkBadgeEarned('tool_collector');
+                if (userProgress.toolsLearned.size === 10) {
+                    checkBadgeEarned('speed_learner');
+                }
+                if (userProgress.toolsLearned.size === 50) {
+                    checkBadgeEarned('completionist');
+                }
+                
+                // Check if area is completed
+                checkAreaCompletion();
+                
+                // Update visuals
+                updateProgressStats();
+                generateToolsGrid(knowledgeAreas[userProgress.currentArea].tools, userProgress.currentArea);
+                updateAreaProgress(userProgress.currentArea);
+                
+                // Update modal stats
+                const area = knowledgeAreas[userProgress.currentArea];
+                const learnedTools = area.tools.filter(tool => 
+                    userProgress.toolsLearned.has(`${userProgress.currentArea}_${tool.name}`)
+                ).length;
+                const progressPercent = Math.round((learnedTools / area.tools.length) * 100);
+                
+                document.getElementById('modalLearnedCount').textContent = learnedTools;
+                document.getElementById('modalProgressPercent').textContent = progressPercent + '%';
+                
+                showAreaBadges(userProgress.currentArea, progressPercent);
+            }
+        }
+
+        // Show learning celebration
+        function showLearningCelebration(toolName) {
+            const celebration = document.createElement('div');
+            celebration.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #6bcf7f, #4d96ff);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 15px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                z-index: 1500;
+                animation: slideInRight 0.4s ease, fadeOut 0.4s ease 2.5s forwards;
+                max-width: 300px;
+            `;
+            
+            celebration.innerHTML = `
+                <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;">🎉 Tool Learned!</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">${toolName}</div>
+            `;
+            
+            document.body.appendChild(celebration);
+            
+            setTimeout(() => {
+                celebration.remove();
+            }, 3000);
+        }
+
+        // Check if area is completed
+        function checkAreaCompletion() {
+            const area = knowledgeAreas[userProgress.currentArea];
+            const learnedCount = area.tools.filter(tool => 
+                userProgress.toolsLearned.has(`${userProgress.currentArea}_${tool.name}`)
+            ).length;
+            
+            if (learnedCount === area.tools.length) {
+                // Area completed!
+                const areaElement = document.querySelector(`[data-area="${userProgress.currentArea}"]`);
+                areaElement.classList.add('explored');
+                areaElement.querySelector('.progress-badge').textContent = '🏆';
+                
+                // Award area-specific badge
+                const areaBadgeMap = {
+                    strategy: 'strategy_master',
+                    elicitation: 'elicitation_expert',
+                    analysis: 'analysis_guru',
+                    evaluation: 'evaluation_pro',
+                    management: 'management_ace',
+                    planning: 'planning_wizard'
+                };
+                
+                checkBadgeEarned(areaBadgeMap[userProgress.currentArea]);
+                checkBadgeEarned('area_specialist');
+                
+                // Check if all areas completed
+                if (userProgress.areasExplored.size === 6 && areAllAreasCompleted()) {
+                    checkBadgeEarned('babok_master');
+                }
+            }
+        }
+
+        // Check if all areas are completed
+        function areAllAreasCompleted() {
+            return Object.keys(knowledgeAreas).every(areaKey => {
+                const area = knowledgeAreas[areaKey];
+                const learnedCount = area.tools.filter(tool => 
+                    userProgress.toolsLearned.has(`${areaKey}_${tool.name}`)
+                ).length;
+                return learnedCount === area.tools.length;
+            });
+        }
+
+        // Check and award badges
+        function checkBadgeEarned(badgeKey) {
+            if (!userProgress.badges.has(badgeKey)) {
+                const conditions = {
+                    first_explorer: () => userProgress.areasExplored.size >= 1,
+                    tool_collector: () => userProgress.toolsLearned.size >= 5,
+                    area_specialist: () => Object.keys(knowledgeAreas).some(areaKey => {
+                        const area = knowledgeAreas[areaKey];
+                        const learnedCount = area.tools.filter(tool => 
+                            userProgress.toolsLearned.has(`${areaKey}_${tool.name}`)
+                        ).length;
+                        return learnedCount === area.tools.length;
+                    }),
+                    strategy_master: () => isAreaCompleted('strategy'),
+                    elicitation_expert: () => isAreaCompleted('elicitation'),
+                    analysis_guru: () => isAreaCompleted('analysis'),
+                    evaluation_pro: () => isAreaCompleted('evaluation'),
+                    management_ace: () => isAreaCompleted('management'),
+                    planning_wizard: () => isAreaCompleted('planning'),
+                    babok_master: () => areAllAreasCompleted(),
+                    speed_learner: () => userProgress.toolsLearned.size >= 10,
+                    completionist: () => userProgress.toolsLearned.size >= 50
+                };
+                
+                if (conditions[badgeKey] && conditions[badgeKey]()) {
+                    userProgress.badges.add(badgeKey);
+                    showBadgeEarned(badgeKey);
+                }
+            }
+        }
+
+        // Check if specific area is completed
+        function isAreaCompleted(areaKey) {
+            const area = knowledgeAreas[areaKey];
+            const learnedCount = area.tools.filter(tool => 
+                userProgress.toolsLearned.has(`${areaKey}_${tool.name}`)
+            ).length;
+            return learnedCount === area.tools.length;
+        }
+
+        // Show badge earned popup
+        function showBadgeEarned(badgeKey) {
+            const badge = badges[badgeKey];
+            const popup = document.createElement('div');
+            popup.className = 'achievement-popup';
+            popup.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 15px;">🏆</div>
+                <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Badge Earned!</div>
+                <div style="font-size: 1.2rem; margin-bottom: 10px;">${badge.name}</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">${badge.description}</div>
+            `;
+            
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 3000);
+        }
+
+        // Show area-specific badges
+        function showAreaBadges(areaKey, progressPercent) {
+            const badgeShowcase = document.getElementById('badgeShowcase');
+            const areaBadges = document.getElementById('areaBadges');
+            
+            // Get relevant badges for this area
+            const relevantBadges = [];
+            
+            // Area completion badge
+            const areaBadgeMap = {
+                strategy: 'strategy_master',
+                elicitation: 'elicitation_expert',
+                analysis: 'analysis_guru',
+                evaluation: 'evaluation_pro',
+                management: 'management_ace',
+                planning: 'planning_wizard'
+            };
+            
+            if (userProgress.badges.has(areaBadgeMap[areaKey])) {
+                relevantBadges.push(badges[areaBadgeMap[areaKey]]);
+            }
+            
+            // General badges
+            if (userProgress.badges.has('first_explorer')) {
+                relevantBadges.push(badges['first_explorer']);
+            }
+            if (userProgress.badges.has('tool_collector')) {
+                relevantBadges.push(badges['tool_collector']);
+            }
+            if (userProgress.badges.has('area_specialist')) {
+                relevantBadges.push(badges['area_specialist']);
+            }
+            
+            if (relevantBadges.length > 0) {
+                badgeShowcase.style.display = 'block';
+                areaBadges.innerHTML = relevantBadges.map(badge => 
+                    `<div class="badge">${badge.name}</div>`
+                ).join('');
+            } else {
+                badgeShowcase.style.display = 'none';
+            }
+        }
+
+        // Update area visuals
+        function updateAreaVisuals(areaKey) {
+            const areaElement = document.querySelector(`[data-area="${areaKey}"]`);
+            if (!areaElement.classList.contains('explored')) {
+                areaElement.classList.add('exploring');
+                areaElement.querySelector('.progress-badge').textContent = '🔓';
+                
+                setTimeout(() => {
+                    areaElement.classList.remove('exploring');
+                    areaElement.classList.add('explored');
+                }, 2000);
+            }
+        }
+
+        // Update area progress bar
+        function updateAreaProgress(areaKey) {
+            const area = knowledgeAreas[areaKey];
+            const learnedCount = area.tools.filter(tool => 
+                userProgress.toolsLearned.has(`${areaKey}_${tool.name}`)
+            ).length;
+            const progressPercent = (learnedCount / area.tools.length) * 100;
+            
+            const areaElement = document.querySelector(`[data-area="${areaKey}"]`);
+            const progressBar = areaElement.querySelector('.progress-fill');
+            progressBar.style.width = progressPercent + '%';
+            
+            if (progressPercent === 100) {
+                areaElement.querySelector('.progress-badge').textContent = '🏆';
+            }
+        }
+
+        // Update overall progress statistics
+        function updateProgressStats() {
+            document.getElementById('areasExplored').textContent = userProgress.areasExplored.size;
+            document.getElementById('toolsLearned').textContent = userProgress.toolsLearned.size;
+            document.getElementById('badgesEarned').textContent = userProgress.badges.size;
+            
+            const totalTools = Object.values(knowledgeAreas).reduce((sum, area) => sum + area.tools.length, 0);
+            const completionRate = Math.round((userProgress.toolsLearned.size / totalTools) * 100);
+            document.getElementById('completionRate').textContent = completionRate + '%';
+            
+            // Update all area progress bars
+            Object.keys(knowledgeAreas).forEach(areaKey => {
+                updateAreaProgress(areaKey);
+            });
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('areaModal').classList.remove('show');
+        }
+
+        // Load user progress from localStorage (if available)
+        function loadUserProgress() {
+            try {
+                const saved = localStorage.getItem('babokMapProgress');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    userProgress.areasExplored = new Set(data.areasExplored || []);
+                    userProgress.toolsLearned = new Set(data.toolsLearned || []);
+                    userProgress.badges = new Set(data.badges || []);
+                    
+                    // Update visuals for explored areas
+                    userProgress.areasExplored.forEach(areaKey => {
+                        const areaElement = document.querySelector(`[data-area="${areaKey}"]`);
+                        areaElement.classList.add('explored');
+                        areaElement.querySelector('.progress-badge').textContent = '🔓';
+                    });
+                }
+            } catch (e) {
+                console.log('No saved progress found');
+            }
+        }
+
+        // Save user progress to localStorage
+        function saveUserProgress() {
+            try {
+                const data = {
+                    areasExplored: Array.from(userProgress.areasExplored),
+                    toolsLearned: Array.from(userProgress.toolsLearned),
+                    badges: Array.from(userProgress.badges)
+                };
+                localStorage.setItem('babokMapProgress', JSON.stringify(data));
+            } catch (e) {
+                console.log('Could not save progress');
+            }
+        }
+
+        // Auto-save progress periodically
+        setInterval(saveUserProgress, 5000);
+
+        // Close modal when clicking outside
+        document.getElementById('areaModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // Add some dynamic background effects
+        function createFloatingParticle() {
+            const particle = document.createElement('div');
+            const icons = ['🎯', '🗣️', '🔍', '⚖️', '📋', '📈', '✨', '💡', '🚀'];
+            
+            particle.style.cssText = `
+                position: fixed;
+                font-size: 1.5rem;
+                color: rgba(255,255,255,0.1);
+                pointer-events: none;
+                z-index: -1;
+                left: ${Math.random() * 100}vw;
+                top: 100vh;
+                animation: floatUp 12s linear infinite;
+            `;
+            
+            particle.textContent = icons[Math.floor(Math.random() * icons.length)];
+            document.body.appendChild(particle);
+            
+            setTimeout(() => {
+                particle.remove();
+            }, 12000);
+        }
+
+        // Add floating animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes floatUp {
+                0% { 
+                    transform: translateY(0) rotate(0deg);
+                    opacity: 0;
+                }
+                10% { opacity: 0.3; }
+                90% { opacity: 0.3; }
+                100% { 
+                    transform: translateY(-100vh) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes fadeOut {
+                to { opacity: 0; transform: translateX(100%); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Create floating particles periodically
+        setInterval(createFloatingParticle, 3000);
+    </script>
+</body>
+</html>
